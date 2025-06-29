@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简易WORD和Excel文件阅读器</title>
+    <style>
+        body {
+            background: linear-gradient(to bottom, #e6cfe6, #87CEFA);
+            background-size: col-auto;
+        }
+
+        #poweredByLazyChara {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            margin: 20px;
+            font-size: 12px;
+            color: rgba(0, 0, 0, 0.6);
+        }
+
+        #documentContent {
+            margin-top: 20px;
+            padding: 10px;
+            border: 3px solid #FFD700;
+        }
+    </style>
+</head>
+<body>
+
+<h1>选择Word或Excel文件（看不了直接改扩展名）</h1>
+<form action="#" method="post" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".docx, .xlsx">
+    <input type="submit" value="重开">
+</form>
+
+<h2>已读取文件内容：</h2>
+<div id="documentContent"></div>
+
+<!-- Powered By LazyChara -->
+<div id="poweredByLazyChara">Powered By LazyChara</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.4/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.0/xlsx.full.min.js"></script>
+<script>
+    document.querySelector('input[type="file"]').addEventListener('change', function() {
+        const fileInput = document.querySelector('input[type="file"]');
+        const documentContent = document.getElementById('documentContent');
+        const file = fileInput.files[0];
+
+        if (file) {
+            const fileName = file.name;
+            const reader = new FileReader();
+
+            if (fileName.endsWith('.docx')) {
+                // 解析 .docx 文件并显示内容
+                reader.onload = function(event) {
+                    const arrayBuffer = event.target.result;
+                    mammoth.convertToHtml({arrayBuffer: arrayBuffer})
+                        .then(result => {
+                            documentContent.innerHTML = result.value;
+                        })
+                        .catch(error => {
+                            console.log('Error converting docx to html:', error);
+                        });
+                };
+            } else if (fileName.endsWith('.xlsx')) {
+                // 解析 .xlsx 文件并显示内容
+                reader.onload = function(event) {
+                    const data = new Uint8Array(event.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    const html = XLSX.utils.sheet_to_html(sheet);
+                    documentContent.innerHTML = html;
+                };
+            } else {
+                documentContent.innerHTML = '<p>请选择 .docx 或 .xlsx 文件进行预览。</p>';
+                return;
+            }
+
+            reader.readAsArrayBuffer(file);
+        } else {
+            documentContent.innerHTML = '';
+        }
+    });
+</script>
+
+</body>
+</html>
